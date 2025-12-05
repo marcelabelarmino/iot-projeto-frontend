@@ -71,7 +71,14 @@ loginForm?.addEventListener('submit', async (e) => {
             body: JSON.stringify({ email, senha })
         });
 
-        const data = await response.json();
+        // Try to parse JSON; if server returned HTML/text, fall back to text for clearer errors
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            const text = await response.text();
+            data = { error: text };
+        }
 
         if (!response.ok) {
             loginError.textContent = data.error || 'Erro ao fazer login';
@@ -246,8 +253,21 @@ async function fetchData() {
         console.log('Buscando dados com URL:', url);
 
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Erro na resposta da rede: ' + response.statusText);
-        const data = await response.json();
+        if (!response.ok) {
+            // Try to include server body (text) for clearer errors
+            let serverText = '';
+            try { serverText = await response.text(); } catch (e) { serverText = response.statusText; }
+            throw new Error('Erro na resposta da rede: ' + (serverText || response.statusText));
+        }
+
+        // Parse JSON safely; fallback to text if parsing fails
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            const text = await response.text();
+            throw new Error('Resposta inválida do servidor: ' + text);
+        }
 
         if (data.error) throw new Error(data.error);
 

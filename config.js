@@ -8,7 +8,9 @@ const API_CONFIG = {
   },
   // Production (Netlify)
   production: {
-    apiBaseUrl: process.env.REACT_APP_API_URL || window.__API_URL__ || 'https://iot-projeto-backend.onrender.com/api'
+    // In browsers `process` is not defined. Avoid using `process.env` here.
+    // Use a global injected `window.__API_URL__` (set by hosting) or fallback to the public backend URL.
+    apiBaseUrl: (typeof window !== 'undefined' && window.__API_URL__) || 'https://iot-projeto-backend.onrender.com/api'
   }
 };
 
