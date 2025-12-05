@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento de Umidade e Temperatura - Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#254021',
+                        'primary-medium': '#335918',
+                        'primary': '#5F8C1B',
+                        'accent': '#F2CF63',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="page-bg p-6 flex items-center justify-center min-h-screen">
+
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-95">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-red-600 flex items-center">Alerta de Condições Críticas!</h3>
+
+                <button id="close-alert" aria-label="Fechar alerta" title="Fechar alerta"
+                    class="text-gray-400 hover:text-gray-600">
+
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+            </div>
+
+            <div id="alert-message" class="text-gray-700 mb-4"></div>
+
+            <div class="flex justify-end">
+                <button id="acknowledge-alert"
+                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container container max-w-6xl w-full space-y-6">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full overflow-hidden border bg-white shadow">
+                    <img src="assets/logo-silo.jpeg" alt="Logo da Agrigrowth" class="w-full h-full object-cover">
+                </div>
+
+                <div>
+                    <h1 class="text-4xl font-bold text-primary-dark">Dashboard de Monitoramento</h1>
+                    <p class="text-xl text-gray-600">Umidade e Temperatura do Silo</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+
+                <!-- Botão de Usuários - NOVO -->
+                <button id="menu-users"
+                    class="bg-accent text-primary-dark font-medium py-2 px-4 rounded-lg hover:bg-accent/80 transition text-sm shadow">
+                    Usuários
+                </button>
+
+                <!-- Botão de Logout ORIGINAL (único logout-btn do projeto) -->
+                <button id="logout-btn"
+                    class="bg-primary-medium text-white font-medium py-2 px-4 rounded-lg hover:bg-primary-dark transition text-sm shadow">
+                    Sair
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+    <h2 class="text-2xl font-semibold text-primary-dark mb-4">Filtros</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- Máximo de registros -->
+        <div>
+            <label for="limit-select" class="block text-sm font-medium text-primary-dark mb-2">
+                Máximo de Registros
+            </label>
+
+            <select id="limit-select"
+                aria-label="Quantidade de registros"
+                title="Quantidade de registros"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="50">50 registros</option>
+                <option value="100" selected>100 registros</option>
+                <option value="200">200 registros</option>
+                <option value="500">500 registros</option>
+                <option value="1000">1000 registros</option>
+            </select>
+        </div>
+
+        <!-- Data Inicial -->
+        <div>
+            <label for="start-date" class="block text-sm font-medium text-primary-dark mb-2">
+                Data Inicial
+            </label>
+
+            <input type="datetime-local" 
+                id="start-date"
+                aria-label="Data inicial"
+                title="Data inicial"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:outline-none focus:ring-primary focus:border-primary">
+        </div>
+
+        <!-- Data Final -->
+        <div>
+            <label for="end-date" class="block text-sm font-medium text-primary-dark mb-2">
+                Data Final
+            </label>
+
+            <input type="datetime-local" 
+                id="end-date"
+                aria-label="Data final"
+                title="Data final"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:outline-none focus:ring-primary focus:border-primary">
+        </div>
+
+    </div>
+
+    <div class="mt-4 flex gap-2">
+        <button id="apply-filters"
+            aria-label="Aplicar filtros"
+            title="Aplicar filtros"
+            class="bg-primary text-white font-medium py-2 px-6 rounded-lg 
+                   hover:bg-primary-medium transition-colors duration-300">
+            Aplicar Filtros
+        </button>
+
+        <button id="reset-filters"
+            aria-label="Limpar filtros"
+            title="Limpar filtros"
+            class="bg-gray-500 text-white font-medium py-2 px-6 rounded-lg 
+                   hover:bg-gray-600 transition-colors duration-300">
+            Limpar Filtros
+        </button>
+
+        <button id="refresh-btn"
+            aria-label="Atualizar dados"
+            title="Atualizar dados"
+            class="bg-accent text-primary-dark font-medium py-2 px-6 rounded-lg 
+                   hover:bg-accent/80 transition-colors duration-300">
+            Atualizar Dados
+        </button>
+    </div>
+</div>
+
+
+        <!-- Estatísticas -->
+        <div id="stats-container" class="bg-white p-6 rounded-xl shadow-lg border">
+            <h2 class="text-2xl font-semibold text-primary-dark mb-4">Estatísticas</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-primary/10 p-4 rounded-lg border">
+                    <p>Total de Registros</p>
+                    <p id="total-records" class="text-2xl font-bold text-primary">0</p>
+                </div>
+
+                <div class="bg-accent/10 p-4 rounded-lg border">
+                    <p>Umidade Média</p>
+                    <p id="avg-humidity" class="text-2xl font-bold text-accent">0%</p>
+                </div>
+
+                <div class="bg-primary-medium/10 p-4 rounded-lg border">
+                    <p>Temperatura Média</p>
+                    <p id="avg-temperature" class="text-2xl font-bold text-primary-medium">0°C</p>
+                </div>
+
+                <div class="bg-primary-dark/10 p-4 rounded-lg border">
+                    <p>Período</p>
+                    <p id="period-range" class="text-lg font-bold text-primary-dark">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border">
+            <div class="flex justify-between mb-4">
+                <h2 class="text-2xl font-semibold text-primary-dark">Gráfico de Dados</h2>
+                <button id="export-chart" class="bg-primary text-white py-2 px-4 rounded-lg">Exportar</button>
+            </div>
+
+            <div class="relative h-96">
+                <canvas id="myChart"></canvas>
+            </div>
+
+            <p id="error-chart" class="hidden text-center text-red-500 font-medium mt-4">
+                Erro ao carregar os dados.
+            </p>
+        </div>
+
+        <!-- Tabela -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border">
+            <div class="flex justify-between mb-4">
+                <h2 class="text-2xl font-semibold text-primary-dark">Tabela de Dados</h2>
+
+                <button id="export-csv" class="bg-accent text-primary-dark py-2 px-4 rounded-lg">Exportar CSV</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="data-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left">Data/Hora</th>
+                            <th class="px-6 py-3 text-left">Umidade</th>
+                            <th class="px-6 py-3 text-left">Temperatura</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="table-body" class="divide-y divide-gray-200">
+                        <tr id="loading-table">
+                            <td colspan="3" class="text-center text-sm italic p-4">Carregando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="pagination" class="mt-4 hidden">
+                <button id="prev-page">Anterior</button>
+                <span id="page-info">Página 1</span>
+                <button id="next-page">Próxima</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
