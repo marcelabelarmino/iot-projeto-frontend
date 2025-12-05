@@ -42,9 +42,21 @@ body.page-bg::before {
   z-index: 0;
 }
 
-body.page-bg > * {
+/* Keep most direct children above the background layer, but exclude the global alert modal
+   so it can remain fixed and centered (otherwise a generic rule was overriding `.fixed`). */
+body.page-bg > *:not(#alert-modal) {
   position: relative;
   z-index: 1;
+}
+
+/* Ensure the alert modal is fixed and centered above the page */
+#alert-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999; /* ensure it's above other content */
+  display: none; /* visibility controlled by `.show` / `.hidden` classes */
+  align-items: center;
+  justify-content: center;
 }
 
 /* ===== COMPONENTES DE LOGIN ===== */
